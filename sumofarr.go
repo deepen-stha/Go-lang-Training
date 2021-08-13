@@ -10,7 +10,7 @@ func main() {
 
 	fmt.Scanln(&n)
 	fmt.Println(n)
-// 	n := 10
+	// 	n := 10
 
 	var arr [10]int
 
@@ -24,8 +24,8 @@ func main() {
 
 	for i := 0; i < n; i++ {
 		sum = sum + arr[i]
-// 		fmt.Println(i)
+		// 		fmt.Println(i)
 	}
-	fmt.Println("The sum of element :",arr)
+	fmt.Println("The sum of element :", arr)
 	fmt.Println(sum)
 }
