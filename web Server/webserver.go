@@ -10,7 +10,7 @@ import (
 )
 
 //function to read the file it take a filename as an argument and
-//return the string or error as type
+//return the string and error as type
 func loadFile(fileName string) (string, error) {
 
 	bytes, err := ioutil.ReadFile(fileName)
@@ -36,6 +36,13 @@ func rootHandleFunc(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, html)
 	// fmt.Fprintf(w, "This is the home page")
 }
+
+func customerHandlerFunc(w http.ResponseWriter, r *http.Request){
+	fmt.Fprint(w, "This is the customer end point")
+}
+func addHandlerFunc(w http.ResponseWriter, r *http.Request){
+	fmt.Fprint(w,"This is an add handler function")
+}
 func main() {
 	fmt.Println("Http server")
 
@@ -43,6 +50,8 @@ func main() {
 	http.HandleFunc("/", rootHandleFunc)
 	// /user is the endpoint
 	http.HandleFunc("/user", userHandlerFunc)
+
+	http.HandleFunc("/customer", customerHandlerFunc)
 	//8080  is the port number and nil is the default handler
 	//this may give error so we are doing log.Fatal
 	log.Fatal(http.ListenAndServe(":8080", nil))
