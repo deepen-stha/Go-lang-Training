@@ -82,266 +82,303 @@ func getAllData() ([]bson.M, error) {
 //the w means write and r means the read of the response
 func rootHandleFunc(w http.ResponseWriter, r *http.Request) {
 	// Declare host and port options to pass to the Connect() method
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	fmt.Println("clientOptions type:", reflect.TypeOf(clientOptions))
 
-	// Connect to the MongoDB and return Client instance
-	client, err := mongo.Connect(context.TODO(), clientOptions)
-	if err != nil {
-		fmt.Println("mongo.Connect() ERROR:", err)
-		os.Exit(1)
-	}
+	fmt.Println(r.Method)
+	//checking if the method request is GET or not
+	if r.Method == http.MethodGet {
+		clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+		fmt.Println("clientOptions type:", reflect.TypeOf(clientOptions))
 
-	// Declare Context type object for managing multiple API requests
-	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
-
-	// Access a MongoDB collection through a database
-	col := client.Database("ToDo_Database").Collection("Todo_Collection")
-	fmt.Println("Collection type:", reflect.TypeOf(col))
-
-	// Call the collection's Find() method to return Cursor obj
-	// with all of the col's documents
-	cursor, err := col.Find(context.TODO(), bson.M{})
-
-	// Find() method raised an error
-	if err != nil {
-		fmt.Println("Finding all documents ERROR:", err)
-		defer cursor.Close(ctx)
-		// If the API call was a success
-	} else {
-
-		var episodes []bson.M
-		if err = cursor.All(ctx, &episodes); err != nil {
-			log.Fatal(err)
+		// Connect to the MongoDB and return Client instance
+		client, err := mongo.Connect(context.TODO(), clientOptions)
+		if err != nil {
+			fmt.Println("mongo.Connect() ERROR:", err)
+			os.Exit(1)
 		}
-		fmt.Println(episodes)
 
-		//returning the data as a response
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(episodes)
+		// Declare Context type object for managing multiple API requests
+		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
 
-		// // iterate over docs using Next()
-		// // declare a result BSON object
-		// // var result bson.M
-		// len := cursor.RemainingBatchLength()
-		// // fmt.Println(reflect.TypeOf(cursor.RemainingBatchLength()))
+		// Access a MongoDB collection through a database
+		col := client.Database("ToDo_Database").Collection("Todo_Collection")
+		fmt.Println("Collection type:", reflect.TypeOf(col))
 
-		// var result [100]bson.M
+		// Call the collection's Find() method to return Cursor obj
+		// with all of the col's documents
+		cursor, err := col.Find(context.TODO(), bson.M{})
 
-		// count := 0
-		// for cursor.Next(ctx) {
+		// Find() method raised an error
+		if err != nil {
+			fmt.Println("Finding all documents ERROR:", err)
+			defer cursor.Close(ctx)
+			// If the API call was a success
+		} else {
 
-		// 	err := cursor.Decode(&result[count])
+			var episodes []bson.M
+			if err = cursor.All(ctx, &episodes); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(episodes)
 
-		// 	count += 1
-		// 	// If there is a cursor.Decode error
-		// 	if err != nil {
-		// 		fmt.Println("cursor.Next() error:", err)
-		// 		os.Exit(1)
+			//returning the data as a response
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(episodes)
 
-		// 		// If there are no cursor.Decode errors
-		// 	} else {
-		// 		fmt.Println("\nresult type:", reflect.TypeOf(result))
-		// 		fmt.Println("result:", result)
-		// 		// result = append(result, result...)
+			// // iterate over docs using Next()
+			// // declare a result BSON object
+			// // var result bson.M
+			// len := cursor.RemainingBatchLength()
+			// // fmt.Println(reflect.TypeOf(cursor.RemainingBatchLength()))
 
-		// 	}
-		// }
-		// // //returning the data as a response
-		// w.Header().Set("Content-Type", "application/json")
-		// json.NewEncoder(w).Encode(result)
+			// var result [100]bson.M
+
+			// count := 0
+			// for cursor.Next(ctx) {
+
+			// 	err := cursor.Decode(&result[count])
+
+			// 	count += 1
+			// 	// If there is a cursor.Decode error
+			// 	if err != nil {
+			// 		fmt.Println("cursor.Next() error:", err)
+			// 		os.Exit(1)
+
+			// 		// If there are no cursor.Decode errors
+			// 	} else {
+			// 		fmt.Println("\nresult type:", reflect.TypeOf(result))
+			// 		fmt.Println("result:", result)
+			// 		// result = append(result, result...)
+
+			// 	}
+			// }
+			// // //returning the data as a response
+			// w.Header().Set("Content-Type", "application/json")
+			// json.NewEncoder(w).Encode(result)
+
+		}
+	} else {
+		//if the method will be other than GET then we will show them the error
+		http.Error(w, "It only accepts GET method", http.StatusForbidden)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
 	}
+
 }
 
 //this is the function to handle the adding of the todo application
 func addHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
-	//code to get the data from the request Body
-	decoder := json.NewDecoder(r.Body)
-	var t Todo
-	err := decoder.Decode(&t)
-	if err != nil {
-		panic(err)
-	}
-	log.Println(t.Task)
+	//checking if the request mehod is PUT or not
+	if r.Method == http.MethodPut {
 
-	//now forming the data that we want to insert into our database
-	newData := Todo{
-		Task: t.Task,
-		Done: t.Done,
-	}
+		//code to get the data from the request Body
+		decoder := json.NewDecoder(r.Body)
+		var t Todo
+		err := decoder.Decode(&t)
+		if err != nil {
+			panic(err)
+		}
+		log.Println(t.Task)
 
-	//declaring host, options and port number to pass to the connect() method
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+		//now forming the data that we want to insert into our database
+		newData := Todo{
+			Task: t.Task,
+			Done: t.Done,
+		}
 
-	fmt.Println("Client Type : ", reflect.TypeOf(clientOptions))
+		//declaring host, options and port number to pass to the connect() method
+		clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 
-	//now connecting to the mongo database
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+		fmt.Println("Client Type : ", reflect.TypeOf(clientOptions))
 
-	//checking if the errrors occurs or not while connecting to the mongo db
-	if err != nil {
-		fmt.Println("Error while connecting to the mongoDB ", err)
-		os.Exit(1)
-	}
+		//now connecting to the mongo database
+		client, err := mongo.Connect(context.TODO(), clientOptions)
 
-	// Declare Context type object for managing multiple API requests
-	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
-	fmt.Println(reflect.TypeOf(ctx))
+		//checking if the errrors occurs or not while connecting to the mongo db
+		if err != nil {
+			fmt.Println("Error while connecting to the mongoDB ", err)
+			os.Exit(1)
+		}
 
-	//access a mongodb collection through a database
-	col := client.Database("ToDo_Database").Collection("Todo_Collection")
+		// Declare Context type object for managing multiple API requests
+		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+		fmt.Println(reflect.TypeOf(ctx))
 
-	fmt.Println("the type of the collection is : ", reflect.TypeOf(col))
+		//access a mongodb collection through a database
+		col := client.Database("ToDo_Database").Collection("Todo_Collection")
 
-	fmt.Println("The type of the doc is :", reflect.TypeOf(newData))
+		fmt.Println("the type of the collection is : ", reflect.TypeOf(col))
 
-	result, insert_err := col.InsertOne(ctx, newData)
-	if insert_err != nil {
-		fmt.Println("Insertion Error ", insert_err)
-		os.Exit(1)
+		fmt.Println("The type of the doc is :", reflect.TypeOf(newData))
+
+		result, insert_err := col.InsertOne(ctx, newData)
+		if insert_err != nil {
+			fmt.Println("Insertion Error ", insert_err)
+			os.Exit(1)
+		} else {
+			fmt.Println("InsertOne() type : ", reflect.TypeOf(result))
+			fmt.Println(result)
+
+			newID := result.InsertedID
+			fmt.Println(newID)
+			fmt.Println(reflect.TypeOf(newID))
+		}
+
+		//now getting all the data after doing addition of the new data
+		data, _ := getAllData()
+		//returning the data as a response of the api call
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
 	} else {
-		fmt.Println("InsertOne() type : ", reflect.TypeOf(result))
-		fmt.Println(result)
-
-		newID := result.InsertedID
-		fmt.Println(newID)
-		fmt.Println(reflect.TypeOf(newID))
+		//if the method will be other than PUT then we will show them the error
+		http.Error(w, "It only accepts PUT method", http.StatusForbidden)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
-
-	//now getting all the data after doing addition of the new data
-	data, _ := getAllData()
-	//returning the data as a response of the api call
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
 
 }
 
 //this is the function to delete the todo list from the database
 func deleteHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
-	log.Println(r.URL)
+	//checking if the method requested is DELETE or not
+	if r.Method == http.MethodDelete {
+		log.Println(r.URL)
 
-	//spliting the url to the particular id that we want to delete
-	url := r.URL.String()
-	split := strings.Split(url, "/")
-	fmt.Println(split)
-	fmt.Println(split[2])
+		//spliting the url to the particular id that we want to delete
+		url := r.URL.String()
+		split := strings.Split(url, "/")
+		fmt.Println(split)
+		fmt.Println(split[2])
 
-	//now connecting to mongodb
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+		//now connecting to mongodb
+		clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+		client, err := mongo.Connect(context.TODO(), clientOptions)
 
-	//if error occurs while connecting to the database
-	if err != nil {
-		log.Fatal("This is an error")
-		os.Exit(1)
-	}
+		//if error occurs while connecting to the database
+		if err != nil {
+			log.Fatal("This is an error")
+			os.Exit(1)
+		}
 
-	// Declare Context type object for managing multiple API requests
-	ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+		// Declare Context type object for managing multiple API requests
+		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
 
-	//getting all the columns form the database
-	col := client.Database("ToDo_Database").Collection("Todo_Collection")
+		//getting all the columns form the database
+		col := client.Database("ToDo_Database").Collection("Todo_Collection")
 
-	//split of the 2 holds the data id which is unique for each of our data
-	idPrimitive, err := primitive.ObjectIDFromHex(split[2])
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	} else {
-		//calling the delete one method to delete the data
-		res, err := col.DeleteOne(ctx, bson.M{"_id": idPrimitive})
-
+		//split of the 2 holds the data id which is unique for each of our data
+		idPrimitive, err := primitive.ObjectIDFromHex(split[2])
 		if err != nil {
 			log.Fatal(err)
 			os.Exit(1)
 		} else {
-			//checking if the response is nil
-			if res.DeletedCount == 0 {
-				fmt.Println("The data is not found")
+			//calling the delete one method to delete the data
+			res, err := col.DeleteOne(ctx, bson.M{"_id": idPrimitive})
+
+			if err != nil {
+				log.Fatal(err)
+				os.Exit(1)
 			} else {
-				fmt.Println("Deleteone Result : ", res)
+				//checking if the response is nil
+				if res.DeletedCount == 0 {
+					fmt.Println("The data is not found")
+				} else {
+					fmt.Println("Deleteone Result : ", res)
+				}
 			}
 		}
-	}
 
-	//now getting all the data after doing deletion of the data
-	data, _ := getAllData()
-	//returning the data as a response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+		//now getting all the data after doing deletion of the data
+		data, _ := getAllData()
+		//returning the data as a response
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
+
+	} else {
+		//if the method will be other than DELETE then we will show them the error
+		http.Error(w, "It only accepts DELETE method", http.StatusForbidden)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	}
 
 }
 
 //this is the function to update the database
 func updateHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println(r.URL)
+	//checking if the method is POST or not
+	if r.Method == http.MethodPost {
 
-	url := r.URL.String()
-	id := strings.Split(url, "/")
-	//getting the id to be updated
-	fmt.Println(id[2])
+		fmt.Println(r.URL)
 
-	//now getting the data from the request body that we want to update
-	//decoding the json Body
-	//code to get the data(task to update) from the request Body
-	decoder := json.NewDecoder(r.Body)
-	var t UpdateData
-	err := decoder.Decode(&t)
-	if err != nil {
-		panic(err)
-	}
-	log.Println(t.UpdateTask)
+		url := r.URL.String()
+		id := strings.Split(url, "/")
+		//getting the id to be updated
+		fmt.Println(id[2])
 
-	//declaring the host and the port number to connect to the database
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+		//now getting the data from the request body that we want to update
+		//decoding the json Body
+		//code to get the data(task to update) from the request Body
+		decoder := json.NewDecoder(r.Body)
+		var t UpdateData
+		err := decoder.Decode(&t)
+		if err != nil {
+			panic(err)
+		}
+		log.Println(t.UpdateTask)
 
-	//Conenct to teh MOngoDB and return the client instance
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+		//declaring the host and the port number to connect to the database
+		clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	//getting the mongodb col
-	col := client.Database("ToDo_Database").Collection("Todo_Collection")
+		//Conenct to teh MOngoDB and return the client instance
+		client, err := mongo.Connect(context.TODO(), clientOptions)
 
-	objId, err := primitive.ObjectIDFromHex(id[2])
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		//getting the mongodb col
+		col := client.Database("ToDo_Database").Collection("Todo_Collection")
 
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
-	//using the _id to get the specific document from the mongodb database
-	filter := bson.M{"_id": bson.M{"$eq": objId}}
+		objId, err := primitive.ObjectIDFromHex(id[2])
 
-	//now updating the data
-	update := bson.M{"$set": bson.M{"task": t.UpdateTask}}
-	//calling the UpdateOne method and pass filter and update to it
-	result, err := col.UpdateOne(
-		context.Background(),
-		filter,
-		update,
-	)
-	//checking for the error
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		if err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
+		//using the _id to get the specific document from the mongodb database
+		filter := bson.M{"_id": bson.M{"$eq": objId}}
+
+		//now updating the data
+		update := bson.M{"$set": bson.M{"task": t.UpdateTask}}
+		//calling the UpdateOne method and pass filter and update to it
+		result, err := col.UpdateOne(
+			context.Background(),
+			filter,
+			update,
+		)
+		//checking for the error
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		} else {
+			fmt.Println("Update One result :", result)
+			fmt.Println("UpdateOne match count: ", result.MatchedCount)
+			fmt.Println("UpdateOne modified count: ", result.ModifiedCount)
+			fmt.Println("UpdateOne result upsertedId: ", result.UpsertedID)
+		}
+
+		//now getting all the data after doing updation of the data
+		data, _ := getAllData()
+		//returning the updated data as a response of the api call
+		w.WriteHeader(http.StatusCreated)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(data)
 	} else {
-		fmt.Println("Update One result :", result)
-		fmt.Println("UpdateOne match count: ", result.MatchedCount)
-		fmt.Println("UpdateOne modified count: ", result.ModifiedCount)
-		fmt.Println("UpdateOne result upsertedId: ", result.UpsertedID)
+		//if the method will be other than POST then we will show them the error
+		http.Error(w, "It only accepts POST method", http.StatusForbidden)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
 
-	//now getting all the data after doing updation of the data
-	data, _ := getAllData()
-	//returning the updated data as a response of the api call
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
 }
 
 //this is the main function which is initiated at the beggining
