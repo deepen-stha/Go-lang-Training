@@ -1,0 +1,1 @@
+2021-08-19T10:38:18.762+0530	ERROR	Failed to connect to mongodb = error parsing uri: scheme must be "mongodb" or "mongodb+srv"
